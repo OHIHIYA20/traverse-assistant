@@ -111,9 +111,9 @@ BOOL CSetupsDlg::OnInitDialog()
 	m_setupsList.GetWindowRect(&rect);
 	int columnWidth = rect.Width() / 4;
 
-	m_setupsList.InsertColumn(0, _T("Name"),     LVCFMT_LEFT,  columnWidth);
-	m_setupsList.InsertColumn(1, _T("ID"),      LVCFMT_LEFT,  columnWidth);
-	m_setupsList.InsertColumn(2, _T("Instr. Height"),     LVCFMT_LEFT,  columnWidth);
+	m_setupsList.InsertColumn(0, _T("Name"), LVCFMT_LEFT,  columnWidth);
+	m_setupsList.InsertColumn(1, _T("Number"), LVCFMT_LEFT,  columnWidth);
+	m_setupsList.InsertColumn(2, _T("Instr. Height"), LVCFMT_LEFT,  columnWidth);
 	m_setupsList.InsertColumn(3, _T("Orientation"), LVCFMT_LEFT,  columnWidth);
 
 	LoadFromSurveyXml();
@@ -135,9 +135,9 @@ void CSetupsDlg::OnNMDblclkSetupslist(NMHDR *pNMHDR, LRESULT *pResult)
 
 	int item = pNMItemActivate->iItem;
 	CString setupName = m_setupsList.GetItemText(item, 0);
-	CString setupId = m_setupsList.GetItemText(item, 1);
+	CString setupNumber = m_setupsList.GetItemText(item, 1);
 
-	CObservationsDlg dlg(m_xml, setupName, setupId, true, this);
+	CObservationsDlg dlg(m_xml, setupName, setupNumber, true, this);
 	if (IDOK == dlg.DoModal())
 	{
 		bool ok = false;

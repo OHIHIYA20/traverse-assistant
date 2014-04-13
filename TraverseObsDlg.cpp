@@ -91,3 +91,28 @@ void CTraverseObsDlg::FillControls(const TraverseObservation &tobs)
 	m_targetHeightEdit.SetWindowText(value);
 }
 
+
+void CTraverseObsDlg::OnOK()
+{
+	switch (m_typeCombo.GetCurSel())
+	{
+		case 0: m_tobs.type = TT_ORIENTATION; break;
+		case 1: m_tobs.type = TT_FORWARD; break;
+		case 2: m_tobs.type = TT_BACKWARD; break;
+		case 3: m_tobs.type = TT_NETWORK; break;
+		case 4: m_tobs.type = TT_NONE; break;
+	}
+
+	CString value;
+	m_targetNameEdit.GetWindowText(m_tobs.obs.targetName);
+	m_horizontalEdit.GetWindowText(value);
+	m_tobs.obs.horizontalAngle = _tstof(value.GetString());
+	m_verticalEdit.GetWindowText(value);
+	m_tobs.obs.verticalAngle = _tstof(value.GetString());
+	m_distanceEdit.GetWindowText(value);
+	m_tobs.obs.slopeDistance = _tstof(value.GetString());
+	m_targetHeightEdit.GetWindowText(value);
+	m_tobs.obs.targetHeight = _tstof(value.GetString());
+
+	CDialog::OnOK();
+}

@@ -45,6 +45,7 @@ BOOL CTraverseRouteDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	m_routeEdit.SetWindowText(m_route);
 	m_routeEdit.SetSel(0, -1); // todo: get the editbox ready for immediate typing.
 
 	return TRUE;  // return TRUE unless you set the focus to a control

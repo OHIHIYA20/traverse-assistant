@@ -10,12 +10,12 @@
 
 IMPLEMENT_DYNAMIC(CObservationsDlg, CDialog)
 
-CObservationsDlg::CObservationsDlg(XmlDetails &xml, CString setupName, CString setupId, bool singleSelection, CWnd* pParent /*=NULL*/)
+CObservationsDlg::CObservationsDlg(XmlDetails &xml, CString setupName, CString setupNumber, bool singleSelection, CWnd* pParent /*=NULL*/)
 	: CDialog(CObservationsDlg::IDD, pParent)
 	, m_singleSelection(singleSelection)
 	, m_xml(xml)
 	, m_setupName(setupName)
-	, m_setupId(setupId)
+	, m_setupNumber(setupNumber)
 {
 
 }
@@ -43,7 +43,7 @@ void CObservationsDlg::LoadFromSurveyXml()
 		}
 	}
 
-	CString searchName = m_setupName + _T("@1");
+	CString searchName = m_setupName + _T('@') + m_setupNumber;
 
 	if (m_xml.surveyXml)
 	{
@@ -51,26 +51,23 @@ void CObservationsDlg::LoadFromSurveyXml()
 		if (group)
 		{
 			int nItem = 0;
-			//const TiXmlElement *obs = group->FirstChildElement("RawObservation");
 			const TiXmlElement *obs = group->FirstChildElement("ReducedObservation");
 			while (obs)
 			{
 				if (searchName == CA2W(obs->Attribute("setupID")))
 				{
-					//const char *sz1 = obs->Attribute("targetSetupID");
-					//const char *sz2 = obs->Attribute("purpose");
 					const char *sz1 = obs->Attribute("name");
 					const char *sz2 = obs->Attribute("desc");
 					const char *sz3 = obs->Attribute("horizAngle");
 					const char *sz4 = obs->Attribute("zenithAngle");
 					const char *sz5 = obs->Attribute("slopeDistance");
 					const char *sz6 = obs->Attribute("targetHeight");
-					const char *sz7 = obs->Attribute("setID");
+					const char *sz7 = obs->Attribute("targetSetupID");
 
 					InsertItem(nItem, CA2W(sz1), CA2W(sz2), CA2W(sz3), CA2W(sz4), CA2W(sz5), CA2W(sz6), CA2W(sz7));
 					++nItem;
 				}
-				obs = obs->NextSiblingElement("RawObservation");
+				obs = obs->NextSiblingElement("ReducedObservation");
 			}
 		}
 	}
@@ -92,7 +89,6 @@ void CObservationsDlg::InsertItem(int item, LPCTSTR sztarget, LPCTSTR szdescript
 		uniqueId = _tstoi(szunique);
 
 	LVITEM sItem = {LVIF_TEXT, item, 0, 0, 0, target.GetBuffer(0)};
-	sItem.lParam = uniqueId;
 	int nItem = m_obsList.InsertItem(&sItem);
 	target.ReleaseBuffer();
 
@@ -120,6 +116,8 @@ void CObservationsDlg::InsertItem(int item, LPCTSTR sztarget, LPCTSTR szdescript
 	sItem.pszText = height.GetBuffer(0);
 	m_obsList.SetItem(&sItem);
 	height.ReleaseBuffer();
+
+	m_obsList.SetItemData(nItem, uniqueId);
 }
 
 Observation CObservationsDlg::GetSingleSelectedObs(bool &ok) const
@@ -149,7 +147,7 @@ BOOL CObservationsDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	CString caption;
-	caption.Format(_T("Observations @ %s:"), m_setupName);
+	caption.Format(_T("Observations @ %s (%s):"), m_setupName, m_setupNumber);
 	m_obsListLab.SetWindowText(caption);
 
 	if (m_singleSelection)
@@ -167,8 +165,8 @@ BOOL CObservationsDlg::OnInitDialog()
 	m_obsList.InsertColumn(1, _T("Description"), LVCFMT_LEFT,  columnWidth);
 	m_obsList.InsertColumn(2, _T("Horizontal"), LVCFMT_LEFT,  columnWidth);
 	m_obsList.InsertColumn(3, _T("Vertical"), LVCFMT_LEFT,  columnWidth);
-	m_obsList.InsertColumn(4, _T("Distance"), LVCFMT_LEFT,  columnWidth);
-	m_obsList.InsertColumn(5, _T("Target Height"), LVCFMT_LEFT,  columnWidth);
+	m_obsList.InsertColumn(4, _T("Slope Dist"), LVCFMT_LEFT,  columnWidth);
+	m_obsList.InsertColumn(5, _T("Instr. Height"), LVCFMT_LEFT,  columnWidth);
 
 	LoadFromSurveyXml();
 
@@ -219,14 +217,54 @@ void CObservationsDlg::OnNMDblclkObslist(NMHDR *pNMHDR, LRESULT *pResult)
 
 Observation CObservationsDlg::GetObservationAt(int iItem) const
 {
-	int uniqueId = (int)m_obsList.GetItemData(iItem);
+	int targetID = (int)m_obsList.GetItemData(iItem);
+	char szTargetID[32];
+	sprintf_s(szTargetID, "%d", targetID);
 
-	Observation obs;
-	obs.targetName = m_obsList.GetItemText(iItem, 0);
-	obs.description = m_obsList.GetItemText(iItem, 1);
-	obs.horizontalAngle = _tstof(m_obsList.GetItemText(iItem, 2).GetString());
-	obs.verticalAngle = _tstof(m_obsList.GetItemText(iItem, 3).GetString());
-	obs.slopeDistance = _tstof(m_obsList.GetItemText(iItem, 4).GetString());
-	obs.targetHeight = _tstof(m_obsList.GetItemText(iItem, 5).GetString());
-	return obs;
+	if (m_xml.surveyXml == NULL)
+	{
+		if (m_xml.xmlDocument.LoadFile(CW2A(m_xml.filename)))
+		{
+			const TiXmlElement *root = m_xml.xmlDocument.RootElement();
+			if (root)
+				m_xml.surveyXml = root->FirstChildElement("Survey");
+		}
+	}
+
+	CString searchName = m_setupName + _T('@') + m_setupNumber;
+
+	if (m_xml.surveyXml)
+	{
+		const TiXmlElement *group = m_xml.surveyXml->FirstChildElement("ObservationGroup");
+		if (group)
+		{
+			int nItem = 0;
+			const TiXmlElement *obs = group->FirstChildElement("ReducedObservation");
+			while (obs)
+			{
+				if (0 == strcmp(szTargetID, obs->Attribute("targetSetupID")))
+				{
+					const char *sz1 = obs->Attribute("name");
+					const char *sz2 = obs->Attribute("desc");
+					const char *sz3 = obs->Attribute("horizAngle");
+					const char *sz4 = obs->Attribute("zenithAngle");
+					const char *sz5 = obs->Attribute("slopeDistance");
+					const char *sz6 = obs->Attribute("targetHeight");
+
+					Observation o;
+					o.targetName = CA2W(sz1);
+					o.description = CA2W(sz2);
+					o.horizontalAngle = atof(sz3);
+					o.verticalAngle = atof(sz4);
+					o.slopeDistance = atof(sz5);
+					o.targetHeight = atof(sz6);
+					return o;
+				}
+				obs = obs->NextSiblingElement("ReducedObservation");
+			}
+		}
+	}
+
+	Observation o;
+	return o;
 }

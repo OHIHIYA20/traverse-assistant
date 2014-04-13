@@ -35,7 +35,7 @@ private:
 	bool m_singleSelection;
 	XmlDetails &m_xml;
 	CString m_setupName;
-	CString m_setupId;
+	CString m_setupNumber;
 	CArray<Observation> m_selectedObservations;
 public:
 	virtual BOOL OnInitDialog();

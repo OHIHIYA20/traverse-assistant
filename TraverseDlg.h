@@ -12,7 +12,8 @@ class CTraverseDlg : public CDialog
 {
 	void SplitStringAtSpaces(const CString &value, CStringArray &tokens) const;
 	ETraverseType GetObservationType(const Observation &obs, CString stationName) const;
-	void AppendObservationToList(const TraverseObservation &obs);
+	void RefreshList();
+	void AppendObservationToList(const TraverseObservation &obs, INT_PTR nLeg);
 	TraverseObservation GetObservationAtListItem(int nItem) const;
 
 // Construction
@@ -39,18 +40,16 @@ protected:
 public:
 	afx_msg void OnBnClickedDefineroutebtn();
 	afx_msg void OnBnClickedAddlegobsbtn();
-private:
-	CListBox m_stationNamesListBox;
-public:
+	afx_msg void OnBnClickedLoadobsbtn();
+	afx_msg void OnNMDblclkLegobslist(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnLbnSelchangeRoutelistbox();
 private:
 	XmlDetails m_xml;
+	CArray<TraverseObservation> m_legs;
 
+	CListBox m_stationNamesListBox;
+	CListCtrl m_obsList;
 	CStatic m_legObsLab;
 public:
-	afx_msg void OnBnClickedLoadobsbtn();
-private:
-	CListCtrl m_obsList;
-public:
-	afx_msg void OnNMDblclkLegobslist(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult);
 };

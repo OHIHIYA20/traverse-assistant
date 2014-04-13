@@ -35,4 +35,6 @@ private:
 	CComboBox m_typeCombo;
 public:
 	virtual BOOL OnInitDialog();
+protected:
+	virtual void OnOK();
 };

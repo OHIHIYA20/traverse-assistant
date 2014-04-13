@@ -55,7 +55,7 @@ CTraverseDlg::CTraverseDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_xml.filename = _T("C:\\Src-scratch\\wpf-sqlite-test\\bin\\x64\\Debug\\testdbase.xml");
+	m_xml.filename = _T("C:\\Src-scratch\\Traverse\\Debug\\data\\j153.sqlite.xml");
 }
 
 void CTraverseDlg::DoDataExchange(CDataExchange* pDX)
@@ -76,6 +76,7 @@ BEGIN_MESSAGE_MAP(CTraverseDlg, CDialog)
 	ON_LBN_SELCHANGE(IDC_ROUTELISTBOX, &CTraverseDlg::OnLbnSelchangeRoutelistbox)
 	ON_BN_CLICKED(IDC_LOADOBSBTN, &CTraverseDlg::OnBnClickedLoadobsbtn)
 	ON_NOTIFY(NM_DBLCLK, IDC_LEGOBSLIST, &CTraverseDlg::OnNMDblclkLegobslist)
+	ON_NOTIFY(LVN_KEYDOWN, IDC_LEGOBSLIST, &CTraverseDlg::OnLvnKeydownLegobslist)
 END_MESSAGE_MAP()
 
 
@@ -178,12 +179,22 @@ HCURSOR CTraverseDlg::OnQueryDragIcon()
 void CTraverseDlg::OnBnClickedDefineroutebtn()
 {
 	CString route;
+	for (int i = 0; i < m_stationNamesListBox.GetCount(); ++i)
+	{
+		CString legName;
+		m_stationNamesListBox.GetText(i, legName);
+
+		route.Append(legName);
+		route.AppendChar(_T(' '));
+	}
+
 	CTraverseRouteDlg dlg(route, this);
 	if (IDOK == dlg.DoModal())
 	{
 		CStringArray stationNames;
 		SplitStringAtSpaces(route, stationNames);
 
+		m_stationNamesListBox.ResetContent();
 		for (INT_PTR i = 0; i < stationNames.GetSize(); ++i)
 			m_stationNamesListBox.AddString(stationNames.GetAt(i));
 
@@ -197,9 +208,19 @@ void CTraverseDlg::OnBnClickedDefineroutebtn()
 
 void CTraverseDlg::OnBnClickedAddlegobsbtn()
 {
+	int nLeg = m_stationNamesListBox.GetCurSel();
+	CString stationName;
+	m_stationNamesListBox.GetText(nLeg, stationName);
+
 	TraverseObservation tobs;
+	tobs.routeSequence = nLeg;
+
 	CTraverseObsDlg dlg(m_xml, tobs, this);
-	dlg.DoModal();
+	if (IDOK == dlg.DoModal())
+	{
+		m_legs.Add(tobs);
+		RefreshList();
+	}
 }
 
 void CTraverseDlg::SplitStringAtSpaces(const CString &value, CStringArray &tokens) const
@@ -233,20 +254,27 @@ void CTraverseDlg::OnLbnSelchangeRoutelistbox()
 	CString stationName;
 	m_stationNamesListBox.GetText(selection, stationName);
 
+	CString stationNumber = _T("1");
+
 	CString caption;
-	caption.Format(_T("Observations @ %s"), stationName);
+	caption.Format(_T("Observations @ %s (%s):"), stationName, stationNumber);
 	m_legObsLab.SetWindowText(caption);
 
-	m_obsList.DeleteAllItems();
+	RefreshList();
 }
 
 void CTraverseDlg::OnBnClickedLoadobsbtn()
 {
-	int selection = m_stationNamesListBox.GetCurSel();
-	CString stationName;
-	m_stationNamesListBox.GetText(selection, stationName);
+	int nLeg = m_stationNamesListBox.GetCurSel();
+	if (nLeg == LB_ERR)
+		return;
 
-	CObservationsDlg dlg(m_xml, stationName, _T(""), false, this);
+	CString stationName;
+	m_stationNamesListBox.GetText(nLeg, stationName);
+
+	CString stationNumber = _T("1");
+
+	CObservationsDlg dlg(m_xml, stationName, stationNumber, false, this);
 	if (IDOK == dlg.DoModal())
 	{
 		CArray<Observation> obs;
@@ -257,12 +285,15 @@ void CTraverseDlg::OnBnClickedLoadobsbtn()
 			Observation o = obs.GetAt(i);
 			ETraverseType type = GetObservationType(o, stationName);
 
-			TraverseObservation to;
-			to.type = type;
-			to.obs = o;
+			TraverseObservation tobs;
+			tobs.routeSequence = nLeg;
+			tobs.type = type;
+			tobs.obs = o;
 
-			AppendObservationToList(to);
+			m_legs.Add(tobs);
 		}
+
+		RefreshList();
 	}
 }
 
@@ -301,7 +332,25 @@ ETraverseType CTraverseDlg::GetObservationType(const Observation &obs, CString s
 	return TT_NONE;
 }
 
-void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs)
+void CTraverseDlg::RefreshList()
+{
+	int nLeg = m_stationNamesListBox.GetCurSel();
+	if (nLeg == LB_ERR)
+		return;
+
+	m_obsList.DeleteAllItems();
+
+	for (INT_PTR i = 0; i < m_legs.GetCount(); ++i)
+	{
+		TraverseObservation tobs = m_legs.GetAt(i);
+		if (tobs.routeSequence == nLeg)
+		{
+			AppendObservationToList(tobs, i);
+		}
+	}
+}
+
+void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs, INT_PTR nLeg)
 {
 	_TCHAR sztype[2] = {0, 0};
 	switch (obs.type)
@@ -322,7 +371,7 @@ void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs)
 	int nItem = m_obsList.GetItemCount();
 
 	LVITEM sItem = {LVIF_TEXT, nItem, 0, 0, 0, sztype};
-	m_obsList.InsertItem(&sItem);
+	nItem = m_obsList.InsertItem(&sItem);
 
 	sItem.iSubItem = 1;
 	sItem.pszText = target.GetBuffer(0);
@@ -343,6 +392,8 @@ void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs)
 	sItem.pszText = height.GetBuffer(0);
 	m_obsList.SetItem(&sItem);
 	height.ReleaseBuffer();
+
+	m_obsList.SetItemData(nItem, nLeg);
 }
 
 TraverseObservation CTraverseDlg::GetObservationAtListItem(int nItem) const
@@ -381,6 +432,50 @@ void CTraverseDlg::OnNMDblclkLegobslist(NMHDR *pNMHDR, LRESULT *pResult)
 	TraverseObservation tobs = GetObservationAtListItem(pNMItemActivate->iItem);
 	CTraverseObsDlg dlg(m_xml, tobs, this);
 	dlg.DoModal();
+
+	*pResult = 0;
+}
+
+void CTraverseDlg::OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLVKEYDOWN pLVKeyDow = reinterpret_cast<LPNMLVKEYDOWN>(pNMHDR);
+	
+	switch (pLVKeyDow->wVKey)
+	{
+	case VK_DELETE:
+		{
+		CArray<INT_PTR> victims;
+
+		POSITION pos = m_obsList.GetFirstSelectedItemPosition();
+		if (pos)
+		{
+			while (pos)
+			{
+				int nItem = m_obsList.GetNextSelectedItem(pos);
+				INT_PTR legIndex = (INT_PTR)m_obsList.GetItemData(nItem);
+				victims.Add(legIndex);
+			}
+		}
+
+		if (!victims.IsEmpty())
+		{
+			CString msg;
+			msg.Format(_T("Are you sure you want to delete %d observation(s)?"), victims.GetCount());
+
+			if (IDYES == MessageBox(msg, _T("Confirm"), MB_YESNO | MB_ICONWARNING))
+			{
+				for (INT_PTR i = victims.GetCount() - 1; i >= 0; --i)
+				{
+					INT_PTR legIndex = victims.GetAt(i);
+					m_legs.RemoveAt(legIndex);
+				}
+
+				RefreshList();
+			}
+		}
+		break;
+		}
+	}
 
 	*pResult = 0;
 }
