@@ -8,6 +8,7 @@
 #include "TraverseRouteDlg.h"
 #include "TraverseObsDlg.h"
 #include "ObservationsDlg.h"
+#include <algorithm>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -293,6 +294,7 @@ void CTraverseDlg::OnBnClickedLoadobsbtn()
 			m_legs.Add(tobs);
 		}
 
+		SortList();
 		RefreshList();
 	}
 }
@@ -478,4 +480,9 @@ void CTraverseDlg::OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 
 	*pResult = 0;
+}
+
+void CTraverseDlg::SortList()
+{
+	std::sort(m_legs.GetData(), m_legs.GetData() + m_legs.GetSize(), TraverseObservation::SortByType);
 }

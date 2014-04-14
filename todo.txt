@@ -1,0 +1,14 @@
+todo:
+-----
+menu for opening .xml and .csv files
+change listbox to listctrl for route
+image lists for list controls
+generate .csv on OK
+why the horz scrollbar for leg obs?
+resizable dialogs
+strategy for defining route
+validation of route by code reuse
+
+done:
+-----
+sorted traverse legs list

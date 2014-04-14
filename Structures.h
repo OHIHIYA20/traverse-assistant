@@ -31,12 +31,24 @@ struct Observation
 
 struct TraverseObservation /*: public UI_Element*/
 {
-	int stationSetup;
 	ETraverseType type;
 	int routeSequence;
 	Observation obs;
 
-	TraverseObservation() : stationSetup(0), type(TT_NONE), routeSequence(0) {}
+	TraverseObservation() : type(TT_NONE), routeSequence(0) {}
+
+	static bool SortByType(const TraverseObservation &a, const TraverseObservation &b)
+	{
+		if (a.routeSequence == b.routeSequence)
+		{
+			if (a.type == b.type)
+				return a.obs.targetName.Compare(b.obs.targetName) < 0;
+			else
+				return (int)a.type < (int)b.type;
+		}
+		else
+			return a.routeSequence < b.routeSequence;
+	}
 };
 
 class TraverseRoute

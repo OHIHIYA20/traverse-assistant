@@ -12,6 +12,7 @@ class CTraverseDlg : public CDialog
 {
 	void SplitStringAtSpaces(const CString &value, CStringArray &tokens) const;
 	ETraverseType GetObservationType(const Observation &obs, CString stationName) const;
+	void SortList();
 	void RefreshList();
 	void AppendObservationToList(const TraverseObservation &obs, INT_PTR nLeg);
 	TraverseObservation GetObservationAtListItem(int nItem) const;
