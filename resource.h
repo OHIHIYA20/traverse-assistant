@@ -11,6 +11,7 @@
 #define IDD_TRAVERSEOBSDLG              130
 #define IDD_SETUPSDLG                   131
 #define IDD_OBSDLG                      132
+#define IDR_MENU1                       133
 #define IDC_OBSLIST                     1000
 #define IDC_ADDOBSBTN                   1001
 #define IDC_EDITOBSBTN                  1002
@@ -39,13 +40,14 @@
 #define IDC_DELETESETUPSBTN             1023
 #define IDC_INFOLAB                     1024
 #define IDC_OBSLISTLAB                  1025
+#define ID_FILE_OPEN32771               32771
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        133
-#define _APS_NEXT_COMMAND_VALUE         32771
+#define _APS_NEXT_RESOURCE_VALUE        134
+#define _APS_NEXT_COMMAND_VALUE         32772
 #define _APS_NEXT_CONTROL_VALUE         1026
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

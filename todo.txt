@@ -1,6 +1,5 @@
 todo:
 -----
-menu for opening .xml and .csv files
 change listbox to listctrl for route
 image lists for list controls
 generate .csv on OK
@@ -12,3 +11,4 @@ validation of route by code reuse
 done:
 -----
 sorted traverse legs list
+menu for opening .xml and .csv files

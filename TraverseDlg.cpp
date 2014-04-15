@@ -55,8 +55,6 @@ CTraverseDlg::CTraverseDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CTraverseDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-
-	m_xml.filename = _T("C:\\Src-scratch\\Traverse\\Debug\\data\\j153.sqlite.xml");
 }
 
 void CTraverseDlg::DoDataExchange(CDataExchange* pDX)
@@ -78,6 +76,7 @@ BEGIN_MESSAGE_MAP(CTraverseDlg, CDialog)
 	ON_BN_CLICKED(IDC_LOADOBSBTN, &CTraverseDlg::OnBnClickedLoadobsbtn)
 	ON_NOTIFY(NM_DBLCLK, IDC_LEGOBSLIST, &CTraverseDlg::OnNMDblclkLegobslist)
 	ON_NOTIFY(LVN_KEYDOWN, IDC_LEGOBSLIST, &CTraverseDlg::OnLvnKeydownLegobslist)
+	ON_COMMAND(ID_FILE_OPEN, &CTraverseDlg::OnFileOpen)
 END_MESSAGE_MAP()
 
 
@@ -485,4 +484,36 @@ void CTraverseDlg::OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult)
 void CTraverseDlg::SortList()
 {
 	std::sort(m_legs.GetData(), m_legs.GetData() + m_legs.GetSize(), TraverseObservation::SortByType);
+}
+
+void CTraverseDlg::OnFileOpen()
+{
+	CFileDialog dlg(TRUE);
+	dlg.m_ofn.lpstrFilter = _T("LandXML Files (*.xml)\0*.xml\0Civil Designer fieldbook (*.csv)\0*.csv\0\0");
+
+	if(dlg.DoModal() == IDOK)
+		{
+		bool initialised = !m_legs.IsEmpty() || m_stationNamesListBox.GetCount() > 0;
+		if (initialised)
+			{
+			CString msg = _T("Opening a new file will cause you to lose your current calculation data.\n") \
+				_T("Are you sure you want to continue?");
+			if (IDNO == MessageBox(msg, _T("Error"), MB_YESNO | MB_ICONQUESTION))
+				return;
+			}
+
+		m_xml.Reset();
+
+		if (dlg.m_ofn.nFilterIndex == 1)
+			m_xml.filename = dlg.GetPathName();
+		else
+			{
+			MessageBox(_T("Currently unsupported filetype"), _T("Confirm"), MB_OK | MB_ICONEXCLAMATION);
+			return;
+			}
+
+		m_legs.RemoveAll();
+		RefreshList();
+		m_stationNamesListBox.ResetContent();
+		}
 }

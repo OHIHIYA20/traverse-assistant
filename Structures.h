@@ -9,6 +9,7 @@ struct XmlDetails
 	const TiXmlElement *surveyXml;
 
 	XmlDetails() : surveyXml(NULL) {}
+	void Reset() {filename.Empty(); surveyXml = NULL; }
 };
 
 enum ETraverseType

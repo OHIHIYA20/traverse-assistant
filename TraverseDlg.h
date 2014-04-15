@@ -53,4 +53,5 @@ private:
 	CStatic m_legObsLab;
 public:
 	afx_msg void OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnFileOpen();
 };
