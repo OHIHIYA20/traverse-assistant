@@ -147,7 +147,7 @@ BOOL CObservationsDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	CString caption;
-	caption.Format(_T("Observations @ %s (%s):"), m_setupName, m_setupNumber);
+	caption.Format(_T("Observations at %s (%s):"), m_setupName, m_setupNumber);
 	m_obsListLab.SetWindowText(caption);
 
 	if (m_singleSelection)

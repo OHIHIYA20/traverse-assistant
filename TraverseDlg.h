@@ -48,10 +48,11 @@ private:
 	XmlDetails m_xml;
 	CArray<TraverseObservation> m_legs;
 
-	CListBox m_stationNamesListBox;
+	CListCtrl m_routeList;
 	CListCtrl m_obsList;
 	CStatic m_legObsLab;
 public:
 	afx_msg void OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnFileOpen();
-};
+	afx_msg void OnLvnItemchangedRoutelist(NMHDR *pNMHDR, LRESULT *pResult);
+	};

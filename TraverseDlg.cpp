@@ -60,7 +60,7 @@ CTraverseDlg::CTraverseDlg(CWnd* pParent /*=NULL*/)
 void CTraverseDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_ROUTELISTBOX, m_stationNamesListBox);
+	DDX_Control(pDX, IDC_ROUTELIST, m_routeList);
 	DDX_Control(pDX, IDC_LEGOBSLAB, m_legObsLab);
 	DDX_Control(pDX, IDC_LEGOBSLIST, m_obsList);
 }
@@ -72,11 +72,11 @@ BEGIN_MESSAGE_MAP(CTraverseDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_DEFINEROUTEBTN, &CTraverseDlg::OnBnClickedDefineroutebtn)
 	ON_BN_CLICKED(IDC_ADDLEGOBSBTN, &CTraverseDlg::OnBnClickedAddlegobsbtn)
-	ON_LBN_SELCHANGE(IDC_ROUTELISTBOX, &CTraverseDlg::OnLbnSelchangeRoutelistbox)
 	ON_BN_CLICKED(IDC_LOADOBSBTN, &CTraverseDlg::OnBnClickedLoadobsbtn)
 	ON_NOTIFY(NM_DBLCLK, IDC_LEGOBSLIST, &CTraverseDlg::OnNMDblclkLegobslist)
 	ON_NOTIFY(LVN_KEYDOWN, IDC_LEGOBSLIST, &CTraverseDlg::OnLvnKeydownLegobslist)
 	ON_COMMAND(ID_FILE_OPEN, &CTraverseDlg::OnFileOpen)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_ROUTELIST, &CTraverseDlg::OnLvnItemchangedRoutelist)
 END_MESSAGE_MAP()
 
 
@@ -112,16 +112,24 @@ BOOL CTraverseDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	m_obsList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
+	m_routeList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 
-	CRect rect;
-	m_obsList.GetWindowRect(&rect);
-	int columnWidth = rect.Width() / 5;
+	CRect rect1;
+	m_routeList.GetWindowRect(&rect1);
+	int columnWidth1 = rect1.Width() / 2;
 
-	m_obsList.InsertColumn(0, _T("Type"), LVCFMT_LEFT,  columnWidth);
-	m_obsList.InsertColumn(1, _T("Target"), LVCFMT_LEFT,  columnWidth);
-	m_obsList.InsertColumn(2, _T("Horizontal"), LVCFMT_LEFT,  columnWidth);
-	m_obsList.InsertColumn(3, _T("Reduced"), LVCFMT_LEFT,  columnWidth);
-	m_obsList.InsertColumn(4, _T("Target Height"), LVCFMT_LEFT,  columnWidth);
+	m_routeList.InsertColumn(0, _T("Name"), LVCFMT_LEFT, columnWidth1);
+	m_routeList.InsertColumn(1, _T("No."), LVCFMT_LEFT, columnWidth1);
+
+	CRect rect2;
+	m_obsList.GetWindowRect(&rect2);
+	int columnWidth2 = rect2.Width() / 5;
+
+	m_obsList.InsertColumn(0, _T("Type"), LVCFMT_LEFT,  columnWidth2);
+	m_obsList.InsertColumn(1, _T("Target"), LVCFMT_LEFT,  columnWidth2);
+	m_obsList.InsertColumn(2, _T("Horizontal"), LVCFMT_LEFT,  columnWidth2);
+	m_obsList.InsertColumn(3, _T("Reduced"), LVCFMT_LEFT,  columnWidth2);
+	m_obsList.InsertColumn(4, _T("Target Height"), LVCFMT_LEFT,  columnWidth2);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -179,11 +187,9 @@ HCURSOR CTraverseDlg::OnQueryDragIcon()
 void CTraverseDlg::OnBnClickedDefineroutebtn()
 {
 	CString route;
-	for (int i = 0; i < m_stationNamesListBox.GetCount(); ++i)
+	for (int i = 0; i < m_routeList.GetItemCount(); ++i)
 	{
-		CString legName;
-		m_stationNamesListBox.GetText(i, legName);
-
+		CString legName = m_routeList.GetItemText(i, 0);
 		route.Append(legName);
 		route.AppendChar(_T(' '));
 	}
@@ -194,32 +200,47 @@ void CTraverseDlg::OnBnClickedDefineroutebtn()
 		CStringArray stationNames;
 		SplitStringAtSpaces(route, stationNames);
 
-		m_stationNamesListBox.ResetContent();
+		m_routeList.DeleteAllItems();
 		for (INT_PTR i = 0; i < stationNames.GetSize(); ++i)
-			m_stationNamesListBox.AddString(stationNames.GetAt(i));
+			{
+			CString name = stationNames.GetAt(i);
+			CString number = _T("1");
+
+			LVITEM sItem = {LVIF_TEXT, i, 0, 0, 0, name.GetBuffer(0)};
+			m_routeList.InsertItem(&sItem);
+			name.ReleaseBuffer();
+
+			sItem.iSubItem = 1;
+			sItem.pszText = number.GetBuffer(0);
+			m_routeList.SetItem(&sItem);
+			number.ReleaseBuffer();
+			}
 
 		if (stationNames.GetSize() > 0)
 		{
-			m_stationNamesListBox.SetCurSel(0);
-			OnLbnSelchangeRoutelistbox();
+			m_routeList.SetItemState(0, LVIS_SELECTED, LVIS_SELECTED);
+			m_routeList.SetSelectionMark(0);
 		}
 	}
 }
 
 void CTraverseDlg::OnBnClickedAddlegobsbtn()
 {
-	int nLeg = m_stationNamesListBox.GetCurSel();
-	CString stationName;
-	m_stationNamesListBox.GetText(nLeg, stationName);
-
-	TraverseObservation tobs;
-	tobs.routeSequence = nLeg;
-
-	CTraverseObsDlg dlg(m_xml, tobs, this);
-	if (IDOK == dlg.DoModal())
+	POSITION pos = m_routeList.GetFirstSelectedItemPosition();
+	if (pos)
 	{
-		m_legs.Add(tobs);
-		RefreshList();
+		int nLeg = m_routeList.GetNextSelectedItem(pos);
+		CString stationName = m_routeList.GetItemText(nLeg, 0);
+
+		TraverseObservation tobs;
+		tobs.routeSequence = nLeg;
+
+		CTraverseObsDlg dlg(m_xml, tobs, this);
+		if (IDOK == dlg.DoModal())
+		{
+			m_legs.Add(tobs);
+			RefreshList();
+		}
 	}
 }
 
@@ -248,66 +269,69 @@ void CTraverseDlg::SplitStringAtSpaces(const CString &value, CStringArray &token
 	}
 }
 
-void CTraverseDlg::OnLbnSelchangeRoutelistbox()
-{
-	int selection = m_stationNamesListBox.GetCurSel();
-	CString stationName;
-	m_stationNamesListBox.GetText(selection, stationName);
+void CTraverseDlg::OnLvnItemchangedRoutelist(NMHDR *pNMHDR, LRESULT *pResult)
+	{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 
-	CString stationNumber = _T("1");
+	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVNI_SELECTED))
+	{
+		int nLeg = pNMLV->iItem;
+		CString stationName = m_routeList.GetItemText(nLeg, 0);
+		CString stationNumber = m_routeList.GetItemText(nLeg, 1);
 
-	CString caption;
-	caption.Format(_T("Observations @ %s (%s):"), stationName, stationNumber);
-	m_legObsLab.SetWindowText(caption);
+		CString caption;
+		caption.Format(_T("Observations at %s (%s):"), stationName, stationNumber);
+		m_legObsLab.SetWindowText(caption);
 
-	RefreshList();
+		RefreshList();
+	}
+
+	*pResult = 0;
 }
 
 void CTraverseDlg::OnBnClickedLoadobsbtn()
 {
-	int nLeg = m_stationNamesListBox.GetCurSel();
-	if (nLeg == LB_ERR)
-		return;
-
-	CString stationName;
-	m_stationNamesListBox.GetText(nLeg, stationName);
-
-	CString stationNumber = _T("1");
-
-	CObservationsDlg dlg(m_xml, stationName, stationNumber, false, this);
-	if (IDOK == dlg.DoModal())
+	POSITION pos = m_routeList.GetFirstSelectedItemPosition();
+	if (pos)
 	{
-		CArray<Observation> obs;
-		dlg.GetMultipleSelectedObs(obs);
+		int nLeg = m_routeList.GetNextSelectedItem(pos);
+		CString stationName = m_routeList.GetItemText(nLeg, 0);
+		CString stationNumber = m_routeList.GetItemText(nLeg, 1);
 
-		for (INT_PTR i = 0; i < obs.GetCount(); ++i)
+		CObservationsDlg dlg(m_xml, stationName, stationNumber, false, this);
+		if (IDOK == dlg.DoModal())
 		{
-			Observation o = obs.GetAt(i);
-			ETraverseType type = GetObservationType(o, stationName);
+			CArray<Observation> obs;
+			dlg.GetMultipleSelectedObs(obs);
 
-			TraverseObservation tobs;
-			tobs.routeSequence = nLeg;
-			tobs.type = type;
-			tobs.obs = o;
+			for (INT_PTR i = 0; i < obs.GetCount(); ++i)
+			{
+				Observation o = obs.GetAt(i);
+				ETraverseType type = GetObservationType(o, stationName);
 
-			m_legs.Add(tobs);
+				TraverseObservation tobs;
+				tobs.routeSequence = nLeg;
+				tobs.type = type;
+				tobs.obs = o;
+
+				m_legs.Add(tobs);
+			}
+
+			SortList();
+			RefreshList();
 		}
-
-		SortList();
-		RefreshList();
 	}
 }
 
 ETraverseType CTraverseDlg::GetObservationType(const Observation &obs, CString stationName) const
 {
 	int nLeg = -1;
-	int nStations = m_stationNamesListBox.GetCount();
+	int nStations = m_routeList.GetItemCount();
 
 	CStringArray stations;
 	for (int i = 0; i < nStations; ++i)
 	{
-		CString legName;
-		m_stationNamesListBox.GetText(i, legName);
+		CString legName = m_routeList.GetItemText(i, 0);
 		stations.Add(legName);
 
 		if (legName == stationName)
@@ -335,18 +359,20 @@ ETraverseType CTraverseDlg::GetObservationType(const Observation &obs, CString s
 
 void CTraverseDlg::RefreshList()
 {
-	int nLeg = m_stationNamesListBox.GetCurSel();
-	if (nLeg == LB_ERR)
-		return;
-
-	m_obsList.DeleteAllItems();
-
-	for (INT_PTR i = 0; i < m_legs.GetCount(); ++i)
+	POSITION pos = m_routeList.GetFirstSelectedItemPosition();
+	if (pos)
 	{
-		TraverseObservation tobs = m_legs.GetAt(i);
-		if (tobs.routeSequence == nLeg)
+		int nLeg = m_routeList.GetNextSelectedItem(pos);
+
+		m_obsList.DeleteAllItems();
+
+		for (INT_PTR i = 0; i < m_legs.GetCount(); ++i)
 		{
-			AppendObservationToList(tobs, i);
+			TraverseObservation tobs = m_legs.GetAt(i);
+			if (tobs.routeSequence == nLeg)
+			{
+				AppendObservationToList(tobs, i);
+			}
 		}
 	}
 }
@@ -493,12 +519,12 @@ void CTraverseDlg::OnFileOpen()
 
 	if(dlg.DoModal() == IDOK)
 		{
-		bool initialised = !m_legs.IsEmpty() || m_stationNamesListBox.GetCount() > 0;
+		bool initialised = !m_legs.IsEmpty() || m_routeList.GetItemCount() > 0;
 		if (initialised)
 			{
 			CString msg = _T("Opening a new file will cause you to lose your current calculation data.\n") \
 				_T("Are you sure you want to continue?");
-			if (IDNO == MessageBox(msg, _T("Error"), MB_YESNO | MB_ICONQUESTION))
+			if (IDNO == MessageBox(msg, _T("Confirm"), MB_YESNO | MB_ICONQUESTION))
 				return;
 			}
 
@@ -508,12 +534,12 @@ void CTraverseDlg::OnFileOpen()
 			m_xml.filename = dlg.GetPathName();
 		else
 			{
-			MessageBox(_T("Currently unsupported filetype"), _T("Confirm"), MB_OK | MB_ICONEXCLAMATION);
+			MessageBox(_T("Currently unsupported filetype"), _T("Error"), MB_OK | MB_ICONEXCLAMATION);
 			return;
 			}
 
 		m_legs.RemoveAll();
 		RefreshList();
-		m_stationNamesListBox.ResetContent();
+		m_routeList.DeleteAllItems();
 		}
 }
