@@ -12,6 +12,14 @@
 #define IDD_SETUPSDLG                   131
 #define IDD_OBSDLG                      132
 #define IDR_MENU1                       133
+#define IDI_DOT_BLUE                    134
+#define IDI_DOT_GRAY                    135
+#define IDI_DOT_GREEN                   136
+#define IDI_DOT_ORANGE                  137
+#define IDI_DOT_PINK                    138
+#define IDI_STATION                     139
+#define IDI_ICON2                       140
+#define IDI_TERMINAL                    140
 #define IDC_OBSLIST                     1000
 #define IDC_ADDOBSBTN                   1001
 #define IDC_EDITOBSBTN                  1002
@@ -48,7 +56,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        134
+#define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32772
 #define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           101

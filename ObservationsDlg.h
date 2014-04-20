@@ -15,7 +15,7 @@ private:
 	Observation GetObservationAt(int iItem) const;
 
 public:
-	CObservationsDlg(XmlDetails &xml, CString setupName, CString setupId, bool singleSelection, CWnd* pParent = NULL);   // standard constructor
+	CObservationsDlg(XmlDetails &xml, OccupiedStation setup, bool singleSelection, CWnd* pParent = NULL);   // standard constructor
 	virtual ~CObservationsDlg();
 	Observation GetSingleSelectedObs(bool &ok) const;
 	bool GetMultipleSelectedObs(CArray<Observation> &obs) const;

@@ -8,6 +8,7 @@
 #include "TraverseRouteDlg.h"
 #include "TraverseObsDlg.h"
 #include "ObservationsDlg.h"
+#include "SetupsDlg.h"
 #include <algorithm>
 
 #ifdef _DEBUG
@@ -59,11 +60,12 @@ CTraverseDlg::CTraverseDlg(CWnd* pParent /*=NULL*/)
 
 void CTraverseDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_ROUTELIST, m_routeList);
-	DDX_Control(pDX, IDC_LEGOBSLAB, m_legObsLab);
-	DDX_Control(pDX, IDC_LEGOBSLIST, m_obsList);
-}
+CDialog::DoDataExchange(pDX);
+DDX_Control(pDX, IDC_ROUTELIST, m_routeList);
+DDX_Control(pDX, IDC_LEGOBSLAB, m_legObsLab);
+DDX_Control(pDX, IDC_LEGOBSLIST, m_obsList);
+DDX_Control(pDX, IDC_DEFINEROUTEBTN, m_routeBtn);
+	}
 
 BEGIN_MESSAGE_MAP(CTraverseDlg, CDialog)
 	ON_WM_SYSCOMMAND()
@@ -111,6 +113,12 @@ BOOL CTraverseDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
+	EnableWindow(IDC_DEFINEROUTEBTN, FALSE);
+	EnableWindow(IDC_ADDLEGOBSBTN, FALSE);
+	EnableWindow(IDC_LOADOBSBTN, FALSE);
+
+	m_routeBtn.SetWindowText(_T("Add start..."));
+
 	m_obsList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 	m_routeList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 
@@ -118,8 +126,8 @@ BOOL CTraverseDlg::OnInitDialog()
 	m_routeList.GetWindowRect(&rect1);
 	int columnWidth1 = rect1.Width() / 2;
 
-	m_routeList.InsertColumn(0, _T("Name"), LVCFMT_LEFT, columnWidth1);
-	m_routeList.InsertColumn(1, _T("No."), LVCFMT_LEFT, columnWidth1);
+	m_routeList.InsertColumn(0, _T("Name"), LVCFMT_LEFT, rect1.Width() * 2 / 3);
+	m_routeList.InsertColumn(1, _T("No."), LVCFMT_LEFT, rect1.Width() * 1 / 3);
 
 	CRect rect2;
 	m_obsList.GetWindowRect(&rect2);
@@ -131,8 +139,28 @@ BOOL CTraverseDlg::OnInitDialog()
 	m_obsList.InsertColumn(3, _T("Reduced"), LVCFMT_LEFT,  columnWidth2);
 	m_obsList.InsertColumn(4, _T("Target Height"), LVCFMT_LEFT,  columnWidth2);
 
+	m_routeImageList.Create(10, 10, ILC_COLOR8, 2, 1);
+	m_routeImageList.Add(theApp.LoadIcon(IDI_TERMINAL));
+	m_routeImageList.Add(theApp.LoadIcon(IDI_STATION));
+	m_routeList.SetImageList(&m_routeImageList, LVSIL_SMALL);
+
+	m_obsImageList.Create(16, 16, ILC_COLOR8, 5, 1);
+	m_obsImageList.Add(theApp.LoadIcon(IDI_DOT_BLUE));
+	m_obsImageList.Add(theApp.LoadIcon(IDI_DOT_GREEN));
+	m_obsImageList.Add(theApp.LoadIcon(IDI_DOT_ORANGE));
+	m_obsImageList.Add(theApp.LoadIcon(IDI_DOT_PINK));
+	m_obsImageList.Add(theApp.LoadIcon(IDI_DOT_GRAY));
+	m_obsList.SetImageList(&m_obsImageList, LVSIL_SMALL);
+
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
+
+void CTraverseDlg::EnableWindow(UINT nID, BOOL enabled)
+	{
+	CWnd *button = GetDlgItem(nID);
+	if (button)
+		button->EnableWindow(enabled);
+	}
 
 void CTraverseDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -183,46 +211,21 @@ HCURSOR CTraverseDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
 void CTraverseDlg::OnBnClickedDefineroutebtn()
-{
-	CString route;
-	for (int i = 0; i < m_routeList.GetItemCount(); ++i)
 	{
-		CString legName = m_routeList.GetItemText(i, 0);
-		route.Append(legName);
-		route.AppendChar(_T(' '));
-	}
+	EnableWindow(IDC_ADDLEGOBSBTN, FALSE);
+	EnableWindow(IDC_LOADOBSBTN, FALSE);
 
-	CTraverseRouteDlg dlg(route, this);
+	CSetupsDlg dlg(m_xml, this);
 	if (IDOK == dlg.DoModal())
-	{
-		CStringArray stationNames;
-		SplitStringAtSpaces(route, stationNames);
-
-		m_routeList.DeleteAllItems();
-		for (INT_PTR i = 0; i < stationNames.GetSize(); ++i)
-			{
-			CString name = stationNames.GetAt(i);
-			CString number = _T("1");
-
-			LVITEM sItem = {LVIF_TEXT, i, 0, 0, 0, name.GetBuffer(0)};
-			m_routeList.InsertItem(&sItem);
-			name.ReleaseBuffer();
-
-			sItem.iSubItem = 1;
-			sItem.pszText = number.GetBuffer(0);
-			m_routeList.SetItem(&sItem);
-			number.ReleaseBuffer();
-			}
-
-		if (stationNames.GetSize() > 0)
 		{
-			m_routeList.SetItemState(0, LVIS_SELECTED, LVIS_SELECTED);
-			m_routeList.SetSelectionMark(0);
+		OccupiedStation nextStation = dlg.GetSelectedSetup();
+		m_stations.Add(nextStation);
+		RefreshStations();
+
+		m_routeBtn.SetWindowText(_T("Add next/end..."));
 		}
 	}
-}
 
 void CTraverseDlg::OnBnClickedAddlegobsbtn()
 {
@@ -275,13 +278,14 @@ void CTraverseDlg::OnLvnItemchangedRoutelist(NMHDR *pNMHDR, LRESULT *pResult)
 
 	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVNI_SELECTED))
 	{
-		int nLeg = pNMLV->iItem;
-		CString stationName = m_routeList.GetItemText(nLeg, 0);
-		CString stationNumber = m_routeList.GetItemText(nLeg, 1);
+		OccupiedStation s = GetStationAtRouteItem(pNMLV->iItem);
 
 		CString caption;
-		caption.Format(_T("Observations at %s (%s):"), stationName, stationNumber);
+		caption.Format(_T("Observations at %s (%d):"), s.setupName, s.setupNumber);
 		m_legObsLab.SetWindowText(caption);
+
+		EnableWindow(IDC_ADDLEGOBSBTN, TRUE);
+		EnableWindow(IDC_LOADOBSBTN, TRUE);
 
 		RefreshList();
 	}
@@ -295,10 +299,9 @@ void CTraverseDlg::OnBnClickedLoadobsbtn()
 	if (pos)
 	{
 		int nLeg = m_routeList.GetNextSelectedItem(pos);
-		CString stationName = m_routeList.GetItemText(nLeg, 0);
-		CString stationNumber = m_routeList.GetItemText(nLeg, 1);
+		OccupiedStation station = GetStationAtRouteItem(nLeg);
 
-		CObservationsDlg dlg(m_xml, stationName, stationNumber, false, this);
+		CObservationsDlg dlg(m_xml, station, false, this);
 		if (IDOK == dlg.DoModal())
 		{
 			CArray<Observation> obs;
@@ -307,7 +310,7 @@ void CTraverseDlg::OnBnClickedLoadobsbtn()
 			for (INT_PTR i = 0; i < obs.GetCount(); ++i)
 			{
 				Observation o = obs.GetAt(i);
-				ETraverseType type = GetObservationType(o, stationName);
+				ETraverseType type = GetObservationType(o, station.setupName);
 
 				TraverseObservation tobs;
 				tobs.routeSequence = nLeg;
@@ -377,16 +380,49 @@ void CTraverseDlg::RefreshList()
 	}
 }
 
+void CTraverseDlg::RefreshStations()
+	{
+	m_routeList.DeleteAllItems();
+
+	int iItem = 0;
+
+	for (INT_PTR i = 0; i < m_stations.GetCount(); ++i)
+		{
+		iItem = (int)i;
+
+		OccupiedStation station = m_stations.GetAt(i);
+		bool isTerminal = (i == 0 || i == m_stations.GetCount() - 1);
+
+		LVITEM sItem = {LVIF_TEXT | LVIF_IMAGE, iItem, 0, 0, 0, station.setupName.GetBuffer(0)};
+		sItem.iImage = isTerminal ? 0 : 1;
+		m_routeList.InsertItem(&sItem);
+		station.setupName.ReleaseBuffer();
+
+		CString number;
+		number.Format(_T("%d"), station.setupNumber);
+
+		sItem.iSubItem = 1;
+		sItem.pszText = number.GetBuffer(0);
+		m_routeList.SetItem(&sItem);
+		number.ReleaseBuffer();
+		}
+
+	m_routeList.SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
+	m_routeList.SetSelectionMark(iItem);
+	m_routeList.EnsureVisible(iItem, FALSE);
+	}
+
 void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs, INT_PTR nLeg)
 {
 	_TCHAR sztype[2] = {0, 0};
+	int iImage = 0;
 	switch (obs.type)
 	{
-		case TT_ORIENTATION: sztype[0] = _T('O'); break;
-		case TT_FORWARD:     sztype[0] = _T('F'); break;
-		case TT_BACKWARD:    sztype[0] = _T('B'); break;
-		case TT_NETWORK:     sztype[0] = _T('N'); break;
-		case TT_NONE:        sztype[0] = _T('-'); break;
+		case TT_ORIENTATION: sztype[0] = _T('O'); iImage = 0; break;
+		case TT_FORWARD:     sztype[0] = _T('F'); iImage = 1; break;
+		case TT_BACKWARD:    sztype[0] = _T('B'); iImage = 2; break;
+		case TT_NETWORK:     sztype[0] = _T('N'); iImage = 3; break;
+		case TT_NONE:        sztype[0] = _T('-'); iImage = 4; break;
 	}
 
 	CString horizontal, distance, height;
@@ -397,7 +433,7 @@ void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs, INT_P
 
 	int nItem = m_obsList.GetItemCount();
 
-	LVITEM sItem = {LVIF_TEXT, nItem, 0, 0, 0, sztype};
+	LVITEM sItem = {LVIF_TEXT | LVIF_IMAGE, nItem, 0, 0, 0, sztype, 2, iImage};
 	nItem = m_obsList.InsertItem(&sItem);
 
 	sItem.iSubItem = 1;
@@ -531,7 +567,10 @@ void CTraverseDlg::OnFileOpen()
 		m_xml.Reset();
 
 		if (dlg.m_ofn.nFilterIndex == 1)
+			{
 			m_xml.filename = dlg.GetPathName();
+			EnableWindow(IDC_DEFINEROUTEBTN, TRUE);
+			}
 		else
 			{
 			MessageBox(_T("Currently unsupported filetype"), _T("Error"), MB_OK | MB_ICONEXCLAMATION);
@@ -543,3 +582,11 @@ void CTraverseDlg::OnFileOpen()
 		m_routeList.DeleteAllItems();
 		}
 }
+
+OccupiedStation CTraverseDlg::GetStationAtRouteItem(int nLeg) const
+	{
+	OccupiedStation ret;
+	ret.setupName = m_routeList.GetItemText(nLeg, 0);
+	ret.setupNumber = _tstoi(m_routeList.GetItemText(nLeg, 1).GetString());
+	return ret;
+	}

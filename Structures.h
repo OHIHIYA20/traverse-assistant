@@ -30,7 +30,7 @@ struct Observation
 	Observation() : targetHeight(0.0), horizontalAngle(0.0), verticalAngle(0.0), slopeDistance(0.0) {}
 };
 
-struct TraverseObservation /*: public UI_Element*/
+struct TraverseObservation
 {
 	ETraverseType type;
 	int routeSequence;
@@ -52,21 +52,12 @@ struct TraverseObservation /*: public UI_Element*/
 	}
 };
 
-class TraverseRoute
-{
-	CStringArray m_stationNames;
-};
+struct OccupiedStation
+	{
+	CString setupName;
+	int setupNumber;
+	double instrHeight;
 
-//static int StationOrderingFunc(const UI_Element *a, const UI_Element *b)
-//{
-//	TraverseObservation *ta = dynamic_cast<TraverseObservation *>(a);
-//	TraverseObservation *tb = dynamic_cast<TraverseObservation *>(b);
-//	if (ta && tb)
-//	{
-//		if (ta->routeSequence == tb->RouteSequence)
-//			return ta->type < tb->type)
-//		else
-//			return ta->routeSequence < tb->RouteSequence
-//	}
-//	return 0;
-//}
+	OccupiedStation() : setupNumber(0), instrHeight(0.0) {}
+	void Reset() { setupName.Empty(); setupNumber = 0; instrHeight = 0.0; }
+	};

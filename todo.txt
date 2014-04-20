@@ -1,11 +1,14 @@
 todo:
 -----
+editing leg obs type doesn't change on returning
 why the horz scrollbar for list ctrls?
 strategy for defining route
 generate .csv on OK
 image lists for list controls
 resizable dialogs
 validation of route by code reuse
+disable controls if not yet useable
+
 
 done:
 -----

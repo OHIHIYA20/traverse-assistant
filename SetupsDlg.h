@@ -11,11 +11,13 @@ class CSetupsDlg : public CDialog
 private:
 	void LoadFromSurveyXml();
 	void InsertItem(int item, LPCTSTR id, LPCTSTR name, LPCTSTR height, LPCTSTR orientation);
+	OccupiedStation GetSetupFromItem(int iItem);
 
 public:
 	CSetupsDlg(XmlDetails &xml, CWnd* pParent = NULL);   // standard constructor
 	virtual ~CSetupsDlg();
 	Observation GetSingleSelectedObs() const;
+	OccupiedStation GetSelectedSetup() const;
 
 // Dialog Data
 	enum { IDD = IDD_SETUPSDLG };
@@ -30,8 +32,10 @@ private:
 	XmlDetails &m_xml;
 	CListCtrl m_setupsList;
 	Observation m_singleSelectedObs;
+	OccupiedStation m_selectedSetup;
 
 public:
 //	afx_msg void OnHdnItemdblclickSetupslist(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnNMDblclkSetupslist(NMHDR *pNMHDR, LRESULT *pResult);
-};
+	afx_msg void OnLvnItemchangedSetupslist(NMHDR *pNMHDR, LRESULT *pResult);
+	};

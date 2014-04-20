@@ -10,14 +10,13 @@
 
 IMPLEMENT_DYNAMIC(CObservationsDlg, CDialog)
 
-CObservationsDlg::CObservationsDlg(XmlDetails &xml, CString setupName, CString setupNumber, bool singleSelection, CWnd* pParent /*=NULL*/)
+CObservationsDlg::CObservationsDlg(XmlDetails &xml, OccupiedStation setup, bool singleSelection, CWnd* pParent /*=NULL*/)
 	: CDialog(CObservationsDlg::IDD, pParent)
 	, m_singleSelection(singleSelection)
 	, m_xml(xml)
-	, m_setupName(setupName)
-	, m_setupNumber(setupNumber)
+	, m_setupName(setup.setupName)
 {
-
+	m_setupNumber.Format(_T("%d"), setup.setupNumber);
 }
 
 CObservationsDlg::~CObservationsDlg()
@@ -123,7 +122,13 @@ void CObservationsDlg::InsertItem(int item, LPCTSTR sztarget, LPCTSTR szdescript
 Observation CObservationsDlg::GetSingleSelectedObs(bool &ok) const
 {
 	ok = m_selectedObservations.GetCount() == 1;
-	return m_selectedObservations.GetAt(0);
+	if (ok)
+		return m_selectedObservations.GetAt(0);
+	else
+		{
+		Observation ret;
+		return ret;
+		}
 }
 
 bool CObservationsDlg::GetMultipleSelectedObs(CArray<Observation> &obs) const

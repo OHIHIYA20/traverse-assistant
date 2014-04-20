@@ -94,16 +94,24 @@ Observation CSetupsDlg::GetSingleSelectedObs() const
 	return m_singleSelectedObs;
 }
 
+OccupiedStation CSetupsDlg::GetSelectedSetup() const
+	{
+	return m_selectedSetup;
+	}
 
 BEGIN_MESSAGE_MAP(CSetupsDlg, CDialog)
 //	ON_NOTIFY(HDN_ITEMDBLCLICK, 0, &CSetupsDlg::OnHdnItemdblclickSetupslist)
 ON_NOTIFY(NM_DBLCLK, IDC_SETUPSLIST, &CSetupsDlg::OnNMDblclkSetupslist)
+ON_NOTIFY(LVN_ITEMCHANGED, IDC_SETUPSLIST, &CSetupsDlg::OnLvnItemchangedSetupslist)
 END_MESSAGE_MAP()
 
 
 BOOL CSetupsDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+
+	CWnd *okBtn = GetDlgItem(IDOK);
+	okBtn->EnableWindow(FALSE);
 
 	m_setupsList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 
@@ -129,15 +137,22 @@ BOOL CSetupsDlg::OnInitDialog()
 //	*pResult = 0;
 //}
 
+OccupiedStation CSetupsDlg::GetSetupFromItem(int iItem)
+	{
+	OccupiedStation ret;
+	ret.setupName = m_setupsList.GetItemText(iItem, 0);
+	ret.setupNumber = _tstoi(m_setupsList.GetItemText(iItem, 1).GetString());
+	ret.instrHeight = _tstof(m_setupsList.GetItemText(iItem, 2).GetString());
+	return ret;
+	}
+
 void CSetupsDlg::OnNMDblclkSetupslist(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 
-	int item = pNMItemActivate->iItem;
-	CString setupName = m_setupsList.GetItemText(item, 0);
-	CString setupNumber = m_setupsList.GetItemText(item, 1);
+	OccupiedStation setup = GetSetupFromItem(pNMItemActivate->iItem);
 
-	CObservationsDlg dlg(m_xml, setupName, setupNumber, true, this);
+	CObservationsDlg dlg(m_xml, setup, true, this);
 	if (IDOK == dlg.DoModal())
 	{
 		bool ok = false;
@@ -149,3 +164,20 @@ void CSetupsDlg::OnNMDblclkSetupslist(NMHDR *pNMHDR, LRESULT *pResult)
 
 	*pResult = 0;
 }
+
+void CSetupsDlg::OnLvnItemchangedSetupslist(NMHDR *pNMHDR, LRESULT *pResult)
+	{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+
+	m_selectedSetup.Reset();
+
+	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVNI_SELECTED))
+		{
+		m_selectedSetup = GetSetupFromItem(pNMLV->iItem);
+
+		CWnd *okBtn = GetDlgItem(IDOK);
+		okBtn->EnableWindow(TRUE);
+		}
+
+	*pResult = 0;
+	}

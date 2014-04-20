@@ -10,12 +10,15 @@
 // CTraverseDlg dialog
 class CTraverseDlg : public CDialog
 {
+	void EnableWindow(UINT nID, BOOL enabled);
 	void SplitStringAtSpaces(const CString &value, CStringArray &tokens) const;
 	ETraverseType GetObservationType(const Observation &obs, CString stationName) const;
 	void SortList();
 	void RefreshList();
+	void RefreshStations();
 	void AppendObservationToList(const TraverseObservation &obs, INT_PTR nLeg);
 	TraverseObservation GetObservationAtListItem(int nItem) const;
+	OccupiedStation GetStationAtRouteItem(int nLeg) const;
 
 // Construction
 public:
@@ -47,12 +50,16 @@ public:
 private:
 	XmlDetails m_xml;
 	CArray<TraverseObservation> m_legs;
+	CArray<OccupiedStation> m_stations;
 
 	CListCtrl m_routeList;
 	CListCtrl m_obsList;
 	CStatic m_legObsLab;
+	CImageList m_routeImageList;
+	CImageList m_obsImageList;
 public:
 	afx_msg void OnLvnKeydownLegobslist(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnFileOpen();
 	afx_msg void OnLvnItemchangedRoutelist(NMHDR *pNMHDR, LRESULT *pResult);
+	CButton m_routeBtn;
 	};
