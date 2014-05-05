@@ -2,22 +2,23 @@
 #include "FieldbookReader.h"
 #include "Utils.h"
 
-CFieldbookReader::CFieldbookReader(CArray<TraverseObservation> &legs, CArray<OccupiedStation> &stations)
+CFieldbookReaderWriter::CFieldbookReaderWriter(CArray<TraverseObservation> &legs, CArray<OccupiedStation> &stations)
 : m_legs(legs)
 , m_stations(stations)
 , m_routeSequence(-1)
 	{
 	}
 
-CFieldbookReader::~CFieldbookReader(void)
+CFieldbookReaderWriter::~CFieldbookReaderWriter(void)
 	{
 	}
 
-bool CFieldbookReader::ReadFieldbook(const CString &filename)
+bool CFieldbookReaderWriter::ReadFieldbook(const CString &filename)
 	{
 	m_stations.RemoveAll();
 	m_legs.RemoveAll();
 	m_error.Empty();
+	m_routeSequence = -1;
 
 	bool ret = ParseFile(filename);
 	if (!ret)
@@ -28,7 +29,7 @@ bool CFieldbookReader::ReadFieldbook(const CString &filename)
 	return ret;
 	}
 
-bool CFieldbookReader::ParseFile(const CString &filename)
+bool CFieldbookReaderWriter::ParseFile(const CString &filename)
 	{
 	CStdioFile file(filename, CFile::modeRead);
 
@@ -65,7 +66,7 @@ bool CFieldbookReader::ParseFile(const CString &filename)
 	return true;
 	}
 
-void CFieldbookReader::ReadNextStation(const CStringArray &fields)
+void CFieldbookReaderWriter::ReadNextStation(const CStringArray &fields)
 	{
 	OccupiedStation station;
 	station.setupName = fields.GetAt(FF_Name);
@@ -76,7 +77,7 @@ void CFieldbookReader::ReadNextStation(const CStringArray &fields)
 	++m_routeSequence;
 	}
 
-Observation CFieldbookReader::ReadObservation(const CStringArray &fields)
+Observation CFieldbookReaderWriter::ReadObservation(const CStringArray &fields)
 	{
 	Observation o;
 	o.targetName = fields.GetAt(FF_Name);
@@ -88,7 +89,7 @@ Observation CFieldbookReader::ReadObservation(const CStringArray &fields)
 	return o;
 	}
 
-void CFieldbookReader::ReadOrientation(const CStringArray &fields)
+void CFieldbookReaderWriter::ReadOrientation(const CStringArray &fields)
 	{
 	Observation obs = ReadObservation(fields);
 
@@ -100,7 +101,7 @@ void CFieldbookReader::ReadOrientation(const CStringArray &fields)
 	m_legs.Add(tobs);
 	}
 
-void CFieldbookReader::ReadUnorientedObs(const CStringArray &fields)
+void CFieldbookReaderWriter::ReadUnorientedObs(const CStringArray &fields)
 	{
 	Observation obs = ReadObservation(fields);
 
@@ -112,7 +113,7 @@ void CFieldbookReader::ReadUnorientedObs(const CStringArray &fields)
 	m_legs.Add(tobs);
 	}
 
-void CFieldbookReader::IdentifyDirection()
+void CFieldbookReaderWriter::IdentifyDirection()
 	{
 	for (INT_PTR i = 0; i < m_legs.GetCount(); ++i)
 		{
@@ -124,4 +125,63 @@ void CFieldbookReader::IdentifyDirection()
 			tobs.type = Utils::IdentifyObservationType(tobs.obs, setupName, m_stations);
 			}
 		}
+	}
+
+bool CFieldbookReaderWriter::WriteFieldbook(CString &csv)
+	{
+	csv.Empty();
+	m_error.Empty();
+	m_routeSequence = -1;
+
+	for (INT_PTR i = 0; i < m_legs.GetCount(); ++i)
+		{
+		TraverseObservation tobs = m_legs.GetAt(i);
+
+		if (tobs.routeSequence != m_routeSequence)
+			{
+			OccupiedStation station = m_stations.GetAt(tobs.routeSequence);
+			WriteNextStation(station, csv);
+			m_routeSequence = tobs.routeSequence;
+			}
+		else
+			{
+			switch (tobs.type)
+				{
+				case TT_Orientation:
+					WriteNextObservation(tobs.obs, _T('%'), csv);
+					break;
+				case TT_Forward:
+				case TT_Backward:
+					WriteNextObservation(tobs.obs, _T('u'), csv);
+					break;
+				case TT_None:
+				default:
+					break;
+				}
+			}
+		}
+
+	return true;
+	}
+
+void CFieldbookReaderWriter::WriteNextStation(const OccupiedStation &station, CString &csv)
+	{
+	CString line;
+	line.Format(_T("{,%s,,,,,,%.3f\n"), station.setupName, station.instrHeight);
+
+	csv += line;
+	}
+
+void CFieldbookReaderWriter::WriteNextObservation(const Observation &obs, TCHAR code, CString &csv)
+	{
+	CString line;
+	line.Format(_T("%c,%s,%.4f,,%.3f,%.4f,,%.3f\n"), 
+		code,
+		obs.targetName,
+		obs.horizontalAngle,
+		obs.slopeDistance,
+		obs.verticalAngle,
+		obs.targetHeight);
+
+	csv += line;
 	}

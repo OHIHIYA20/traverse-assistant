@@ -526,7 +526,7 @@ void CTraverseDlg::OnFileOpen()
 		else
 			{
 			ResetEverything();
-			CFieldbookReader reader(m_legs, m_stations);
+			CFieldbookReaderWriter reader(m_legs, m_stations);
 			if (reader.ReadFieldbook(dlg.GetPathName()))
 				{
 				RefreshStations();
@@ -562,4 +562,14 @@ INT_PTR CTraverseDlg::FindTraverseObservation(const CArray<TraverseObservation> 
 			return i;
 		}
 	return -1;
+	}
+
+void CTraverseDlg::OnOK()
+	{
+	CString csv;
+	CFieldbookReaderWriter writer(m_legs, m_stations);
+	if (writer.WriteFieldbook(csv))
+		MessageBox(csv, _T("Traverse fieldbook"));
+
+	CDialog::OnOK();
 	}

@@ -2,7 +2,7 @@
 
 #include "Structures.h"
 
-class CFieldbookReader
+class CFieldbookReaderWriter
 	{
 	CArray<TraverseObservation> &m_legs;
 	CArray<OccupiedStation> &m_stations;
@@ -18,10 +18,13 @@ class CFieldbookReader
 	void IdentifyDirection();
 
 	public:
-		CFieldbookReader(CArray<TraverseObservation> &legs, CArray<OccupiedStation> &stations);
-		~CFieldbookReader(void);
+		CFieldbookReaderWriter(CArray<TraverseObservation> &legs, CArray<OccupiedStation> &stations);
+		~CFieldbookReaderWriter(void);
 
 		bool ReadFieldbook(const CString &filename);
+		bool WriteFieldbook(CString &csv);
+		void WriteNextStation(const OccupiedStation &station, CString &csv);
+		void WriteNextObservation(const Observation &obs, TCHAR code, CString &csv);
 
 		CString m_error;
 	};

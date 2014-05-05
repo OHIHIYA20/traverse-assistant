@@ -63,4 +63,6 @@ public:
 	afx_msg void OnFileOpen();
 	afx_msg void OnLvnItemchangedRoutelist(NMHDR *pNMHDR, LRESULT *pResult);
 	CButton m_routeBtn;
+protected:
+	virtual void OnOK();
 	};
