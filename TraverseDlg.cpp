@@ -9,6 +9,8 @@
 #include "TraverseObsDlg.h"
 #include "ObservationsDlg.h"
 #include "SetupsDlg.h"
+#include "FieldbookReader.h"
+#include "Utils.h"
 #include <algorithm>
 
 #ifdef _DEBUG
@@ -247,31 +249,6 @@ void CTraverseDlg::OnBnClickedAddlegobsbtn()
 	}
 }
 
-void CTraverseDlg::SplitStringAtSpaces(const CString &value, CStringArray &tokens) const
-{
-	int start = 0;
-	while (true)
-	{
-		int end = value.Find(_T(' '), start);
-		if (end == -1)
-		{
-			CString token = value.Mid(start);
-			token.Trim();
-			if (!token.IsEmpty())
-				tokens.Add(token);
-			break;
-		}
-		else
-		{
-			CString token = value.Mid(start, end - start);
-			token.Trim();
-			if (!token.IsEmpty())
-				tokens.Add(token);
-			start = end + 1;
-		}
-	}
-}
-
 void CTraverseDlg::OnLvnItemchangedRoutelist(NMHDR *pNMHDR, LRESULT *pResult)
 	{
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
@@ -310,7 +287,7 @@ void CTraverseDlg::OnBnClickedLoadobsbtn()
 			for (INT_PTR i = 0; i < obs.GetCount(); ++i)
 			{
 				Observation o = obs.GetAt(i);
-				ETraverseType type = GetObservationType(o, station.setupName);
+				ETraverseType type = Utils::IdentifyObservationType(o, station.setupName, m_stations);
 
 				TraverseObservation tobs;
 				tobs.routeSequence = nLeg;
@@ -326,39 +303,13 @@ void CTraverseDlg::OnBnClickedLoadobsbtn()
 	}
 }
 
-ETraverseType CTraverseDlg::GetObservationType(const Observation &obs, CString stationName) const
-{
-	int nLeg = -1;
-	int nStations = m_routeList.GetItemCount();
-
-	CStringArray stations;
-	for (int i = 0; i < nStations; ++i)
+void CTraverseDlg::ResetEverything()
 	{
-		CString legName = m_routeList.GetItemText(i, 0);
-		stations.Add(legName);
-
-		if (legName == stationName)
-			nLeg = i;
+	m_legs.RemoveAll();
+	m_stations.RemoveAll();
+	m_obsList.DeleteAllItems();
+	m_routeList.DeleteAllItems();
 	}
-	
-	if (nLeg == -1)
-		return TT_NONE;
-
-	CString previousStation, nextStation;
-	if (nLeg > 0)
-		previousStation = stations.GetAt(nLeg - 1);
-	if (nLeg < nStations - 1)
-		nextStation = stations.GetAt(nLeg + 1);
-
-	if (obs.targetName == previousStation)
-		return TT_BACKWARD;
-	else if (obs.targetName == nextStation)
-		return TT_FORWARD;
-	else /* if targetName point exists in db */
-		return TT_ORIENTATION;
-
-	return TT_NONE;
-}
 
 void CTraverseDlg::RefreshList()
 {
@@ -418,11 +369,11 @@ void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs, INT_P
 	int iImage = 0;
 	switch (obs.type)
 	{
-		case TT_ORIENTATION: sztype[0] = _T('O'); iImage = 0; break;
-		case TT_FORWARD:     sztype[0] = _T('F'); iImage = 1; break;
-		case TT_BACKWARD:    sztype[0] = _T('B'); iImage = 2; break;
-		case TT_NETWORK:     sztype[0] = _T('N'); iImage = 3; break;
-		case TT_NONE:        sztype[0] = _T('-'); iImage = 4; break;
+		case TT_Orientation: sztype[0] = _T('O'); iImage = 0; break;
+		case TT_Forward:     sztype[0] = _T('F'); iImage = 1; break;
+		case TT_Backward:    sztype[0] = _T('B'); iImage = 2; break;
+		case TT_Network:     sztype[0] = _T('N'); iImage = 3; break;
+		case TT_None:        sztype[0] = _T('-'); iImage = 4; break;
 	}
 
 	CString horizontal, distance, height;
@@ -478,11 +429,11 @@ TraverseObservation CTraverseDlg::GetObservationAtListItem(int nItem) const
 
 		switch (type.GetAt(0))
 		{
-			case _T('O'): tobs.type = TT_ORIENTATION; break;
-			case _T('F'): tobs.type = TT_FORWARD; break;
-			case _T('B'): tobs.type = TT_BACKWARD; break;
-			case _T('N'): tobs.type = TT_NETWORK; break;
-			case _T('-'): tobs.type = TT_NONE; break;
+			case _T('O'): tobs.type = TT_Orientation; break;
+			case _T('F'): tobs.type = TT_Forward; break;
+			case _T('B'): tobs.type = TT_Backward; break;
+			case _T('N'): tobs.type = TT_Network; break;
+			case _T('-'): tobs.type = TT_None; break;
 		}
 	}
 	return tobs;
@@ -570,16 +521,22 @@ void CTraverseDlg::OnFileOpen()
 			{
 			m_xml.filename = dlg.GetPathName();
 			EnableWindow(IDC_DEFINEROUTEBTN, TRUE);
+			ResetEverything();
 			}
 		else
 			{
-			MessageBox(_T("Currently unsupported filetype"), _T("Error"), MB_OK | MB_ICONEXCLAMATION);
-			return;
+			ResetEverything();
+			CFieldbookReader reader(m_legs, m_stations);
+			if (reader.ReadFieldbook(dlg.GetPathName()))
+				{
+				RefreshStations();
+				}
+			else
+				{
+				MessageBox(reader.m_error, _T("Error"), MB_OK | MB_ICONERROR);
+				ResetEverything();
+				}
 			}
-
-		m_legs.RemoveAll();
-		RefreshList();
-		m_routeList.DeleteAllItems();
 		}
 }
 
@@ -589,4 +546,20 @@ OccupiedStation CTraverseDlg::GetStationAtRouteItem(int nLeg) const
 	ret.setupName = m_routeList.GetItemText(nLeg, 0);
 	ret.setupNumber = _tstoi(m_routeList.GetItemText(nLeg, 1).GetString());
 	return ret;
+	}
+
+INT_PTR CTraverseDlg::FindTraverseObservation(const TraverseObservation &oObs) const
+	{
+	return FindTraverseObservation(m_legs, oObs);
+	}
+
+INT_PTR CTraverseDlg::FindTraverseObservation(const CArray<TraverseObservation> &aObs, const TraverseObservation &oObs) const
+	{
+	for (INT_PTR i = 0; i < aObs.GetCount(); ++i)
+		{
+		TraverseObservation item = aObs.GetAt(i);
+		if (item.Matches(oObs))
+			return i;
+		}
+	return -1;
 	}

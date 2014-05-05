@@ -72,11 +72,11 @@ void CTraverseObsDlg::FillControls(const TraverseObservation &tobs)
 {
 	switch (tobs.type)
 	{
-		case TT_ORIENTATION: m_typeCombo.SetCurSel(0); break;
-		case TT_FORWARD:     m_typeCombo.SetCurSel(1); break;
-		case TT_BACKWARD:    m_typeCombo.SetCurSel(2); break;
-		case TT_NETWORK:     m_typeCombo.SetCurSel(3); break;
-		case TT_NONE:        m_typeCombo.SetCurSel(4); break;
+		case TT_Orientation: m_typeCombo.SetCurSel(0); break;
+		case TT_Forward:     m_typeCombo.SetCurSel(1); break;
+		case TT_Backward:    m_typeCombo.SetCurSel(2); break;
+		case TT_Network:     m_typeCombo.SetCurSel(3); break;
+		case TT_None:        m_typeCombo.SetCurSel(4); break;
 	}
 
 	CString value;
@@ -96,11 +96,11 @@ void CTraverseObsDlg::OnOK()
 {
 	switch (m_typeCombo.GetCurSel())
 	{
-		case 0: m_tobs.type = TT_ORIENTATION; break;
-		case 1: m_tobs.type = TT_FORWARD; break;
-		case 2: m_tobs.type = TT_BACKWARD; break;
-		case 3: m_tobs.type = TT_NETWORK; break;
-		case 4: m_tobs.type = TT_NONE; break;
+		case 0: m_tobs.type = TT_Orientation; break;
+		case 1: m_tobs.type = TT_Forward; break;
+		case 2: m_tobs.type = TT_Backward; break;
+		case 3: m_tobs.type = TT_Network; break;
+		case 4: m_tobs.type = TT_None; break;
 	}
 
 	CString value;

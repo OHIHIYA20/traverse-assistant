@@ -11,14 +11,15 @@
 class CTraverseDlg : public CDialog
 {
 	void EnableWindow(UINT nID, BOOL enabled);
-	void SplitStringAtSpaces(const CString &value, CStringArray &tokens) const;
-	ETraverseType GetObservationType(const Observation &obs, CString stationName) const;
 	void SortList();
+	void ResetEverything();
 	void RefreshList();
 	void RefreshStations();
 	void AppendObservationToList(const TraverseObservation &obs, INT_PTR nLeg);
 	TraverseObservation GetObservationAtListItem(int nItem) const;
 	OccupiedStation GetStationAtRouteItem(int nLeg) const;
+	INT_PTR FindTraverseObservation(const TraverseObservation &oObs) const;
+	INT_PTR FindTraverseObservation(const CArray<TraverseObservation> &aObs, const TraverseObservation &oObs) const;
 
 // Construction
 public:

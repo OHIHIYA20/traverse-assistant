@@ -14,7 +14,7 @@ struct XmlDetails
 
 enum ETraverseType
 {
-	TT_ORIENTATION, TT_FORWARD, TT_BACKWARD, TT_NETWORK, TT_NONE
+	TT_Orientation, TT_Forward, TT_Backward, TT_Network, TT_None
 };
 
 struct Observation
@@ -36,7 +36,7 @@ struct TraverseObservation
 	int routeSequence;
 	Observation obs;
 
-	TraverseObservation() : type(TT_NONE), routeSequence(0) {}
+	TraverseObservation() : type(TT_None), routeSequence(0) {}
 
 	static bool SortByType(const TraverseObservation &a, const TraverseObservation &b)
 	{
@@ -50,6 +50,13 @@ struct TraverseObservation
 		else
 			return a.routeSequence < b.routeSequence;
 	}
+
+	bool Matches(const TraverseObservation &rhs) const
+		{
+		return (type == rhs.type &&
+			routeSequence == rhs.routeSequence &&
+			obs.targetName == rhs.obs.targetName);
+		}
 };
 
 struct OccupiedStation
