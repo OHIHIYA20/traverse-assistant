@@ -1,8 +1,6 @@
 todo:
 -----
-editing leg obs type doesn't change on returning
 why the horz scrollbar for list ctrls?
-generate .csv on OK
 resizable dialogs
 validation of route by code reuse
 disable controls if not yet useable
@@ -16,3 +14,5 @@ change route listbox to listctrl
 route set from setups list
 image lists for list controls
 strategy for defining route
+generate .csv on OK
+editing leg obs type doesn't change on returning

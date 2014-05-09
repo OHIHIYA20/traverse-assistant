@@ -407,7 +407,7 @@ void CTraverseDlg::AppendObservationToList(const TraverseObservation &obs, INT_P
 	m_obsList.SetItem(&sItem);
 	height.ReleaseBuffer();
 
-	m_obsList.SetItemData(nItem, nLeg);
+	m_obsList.SetItemData(nItem, nLeg); // 32-bit app-specific item data set to index into legs array
 }
 
 TraverseObservation CTraverseDlg::GetObservationAtListItem(int nItem) const
@@ -415,26 +415,6 @@ TraverseObservation CTraverseDlg::GetObservationAtListItem(int nItem) const
 	TraverseObservation tobs;
 	if (nItem < m_obsList.GetItemCount())
 	{
-		CString type = m_obsList.GetItemText(nItem, 0);
-		CString target = m_obsList.GetItemText(nItem, 1);
-		CString horizontal = m_obsList.GetItemText(nItem, 2);
-		CString distance = m_obsList.GetItemText(nItem, 3);
-		CString height = m_obsList.GetItemText(nItem, 4);
-
-		tobs.obs.targetName = target;
-		tobs.obs.horizontalAngle = _tstof(horizontal.GetString());
-		tobs.obs.verticalAngle = 90.0;
-		tobs.obs.slopeDistance = _tstof(distance.GetString());
-		tobs.obs.targetHeight = _tstof(height.GetString());
-
-		switch (type.GetAt(0))
-		{
-			case _T('O'): tobs.type = TT_Orientation; break;
-			case _T('F'): tobs.type = TT_Forward; break;
-			case _T('B'): tobs.type = TT_Backward; break;
-			case _T('N'): tobs.type = TT_Network; break;
-			case _T('-'): tobs.type = TT_None; break;
-		}
 	}
 	return tobs;
 }
@@ -443,9 +423,13 @@ void CTraverseDlg::OnNMDblclkLegobslist(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 
-	TraverseObservation tobs = GetObservationAtListItem(pNMItemActivate->iItem);
+	int nItem = pNMItemActivate->iItem;
+	INT_PTR iLeg = (INT_PTR)m_obsList.GetItemData(nItem);
+	TraverseObservation &tobs = m_legs.GetAt(iLeg);
+
 	CTraverseObsDlg dlg(m_xml, tobs, this);
-	dlg.DoModal();
+	if (IDOK == dlg.DoModal())
+		RefreshList();
 
 	*pResult = 0;
 }
